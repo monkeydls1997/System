@@ -1,0 +1,115 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#050b1a"><link rel="manifest" href="manifest.json"><link rel="icon" href="icon.svg"><title>The System</title>
+<style>
+:root{--bg:#050b1a;--pn:rgba(10,24,50,.88);--b:#2aa8ff;--t:#d4eaff;--m:#7491b8;--g:#33e6a8;--r:#ff6b86;color-scheme:dark}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 50% -10%,#0e2a55,var(--bg) 60%) fixed;color:var(--t);font:15px/1.45 system-ui,sans-serif;padding:max(10px,env(safe-area-inset-top)) 10px 84px}
+.card{background:var(--pn);border:1px solid rgba(42,168,255,.55);box-shadow:0 0 14px rgba(42,168,255,.25),inset 0 0 18px rgba(42,168,255,.08);border-radius:4px;padding:12px;margin:0 0 12px}
+.sys{color:var(--b);letter-spacing:.14em;font-weight:700;margin-bottom:8px;text-shadow:0 0 8px var(--b)}
+.row{display:flex;justify-content:space-between;gap:8px;padding:2px 0}small,.s{color:var(--m);font-size:12.5px;display:block}
+.bar{height:8px;background:#0a1d3c;border:1px solid #1d4c86;margin:6px 0}.bar i{display:block;height:100%;background:linear-gradient(90deg,#1b78d6,#7fd1ff);box-shadow:0 0 8px var(--b)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 14px}.q{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-top:1px solid #12315a}.q input{width:22px;height:22px;accent-color:#2aa8ff;flex:none;margin-top:2px}
+.on span:first-of-type{color:var(--g);text-decoration:line-through;text-decoration-color:#33e6a855}
+input,select,textarea,button{font:inherit;color:var(--t);background:#081733;border:1px solid #1d4c86;border-radius:3px;padding:8px;max-width:100%}
+input[type=number],input[type=text],input[type=date],input[type=time],select{width:100%;margin:3px 0}textarea{width:100%;min-height:150px}
+.btn{background:#0f3a74;border-color:var(--b);cursor:pointer;padding:9px 12px;margin:4px 4px 4px 0}.btn:disabled{opacity:.4}
+.warn{color:var(--r)}.ok{color:var(--g)}.f2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:#040a18;border-top:1px solid var(--b);padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;border:0;background:none;padding:12px 0;font-size:11.5px;color:var(--m);letter-spacing:.04em}nav .a{color:#fff;text-shadow:0 0 8px var(--b);border-top:2px solid var(--b)}
+#toast{position:fixed;top:max(10px,env(safe-area-inset-top));left:10px;right:10px;z-index:9;background:#0a2a55;border:1px solid var(--b);padding:12px;display:none;box-shadow:0 0 20px var(--b)}
+details summary{cursor:pointer;color:var(--b)}
+</style></head><body><div id="toast"></div><div id="app"></div><nav id="nav"></nav>
+<script>
+const $=s=>document.querySelector(s),esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const K='sl_v1',slug=s=>s.toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,24);
+const ds=d=>new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,10),today=()=>ds(new Date());
+const addD=(s,n)=>{const d=new Date(s+'T00:00:00');d.setDate(d.getDate()+n);return ds(d)},dow=s=>new Date(s+'T00:00:00').getDay(),wk=s=>addD(s,-((dow(s)+6)%7));
+const diff=(a,b)=>Math.round((new Date(b+'T00:00:00')-new Date(a+'T00:00:00'))/864e5);
+const DQ="In bed by 12:00 AM, up by 8:00 AM|40|B\nComplete today's training session|120|A|T\nHit daily step target|60|C\nProtein ~90 g (dal, soy, egg, milk, curd)|60|B\nStay near 2,100-2,200 kcal, no extra snacking|50|B\nDrink 3 L water|30|D\nMobility 10 min (neck, back, hips)|40|D";
+const DEF=()=>({name:'Player',start:'2026-11-10',stepGoal:8000,days:[1,3,5,6],rem:'18:00',sick:false,dqt:DQ,done:{},steps:{},w:[{d:'2026-11-10',v:106.7}],m:[{d:'2026-11-10',c:47,w:49,h:45}],logs:[],claimed:{}});
+let S,T='status';try{S=Object.assign(DEF(),JSON.parse(localStorage.getItem(K)||'{}'))}catch(e){S=DEF()}
+const save=()=>{try{localStorage.setItem(K,JSON.stringify(S))}catch(e){}};
+const SES=[{n:'A: Push + Legs',ex:[['Incline push-up (hands on table/chair)','3x8-12','60-90s','Body straight, chest to edge, elbows ~45 deg. Mistake: sagging hips.'],['Box squat to a chair','3x10-12','60-90s','Sit back, knees track over toes, stand without hands. Mistake: knees caving.'],['DB overhead press (light)','3x10','60s','Ribs down, no back arch.'],['Glute bridge','3x12','45s','Squeeze at top, 1 s pause.'],['Forearm plank','3x20-40s','45s','Straight line, breathe.']]},
+{n:'B: Pull + Posture',ex:[['DB bent-over row','3x10-12/arm','60-90s','Hand on chair, flat back, pull elbow to hip.'],['DB Romanian deadlift','3x10-12','60-90s','Hips back, soft knees, DBs close to legs.'],['Wall angel','3x12','45s','Back and arms on wall, slow.'],['Dead bug','3x8/side','45s','Low back stays flat.'],['Side plank','2x20s/side','30s','Hips high.']]},
+{n:'A: Push + Legs',ex:[]},
+{n:'C: Conditioning + Skills',ex:[['Skipping 45s on / 30s off','6-8 rounds','-','Low hops, shoes, soft floor. Stop if knee pain rises.'],['Handstand practice','5x30-60s','60s','Your strong skill: keep it.'],['Mobility flow (neck, hips, spine)','10 min','-','Slow, no pain.']]}];
+SES[2].ex=SES[0].ex;
+const dqs=()=>S.dqt.split('\n').map(l=>l.split('|')).filter(p=>p[0].trim()).map(p=>({id:slug(p[0]),n:p[0].trim(),xp:+p[1]||30,d:(p[2]||'C').trim(),t:(p[3]||'').trim()=='T'}));
+const dayQ=d=>dqs().filter(q=>!q.t||S.days.includes(dow(d)));
+const ok=d=>{const q=dayQ(d);if(!q.length)return false;return q.filter(x=>S.done[d]&&S.done[d][x.id]).length>=Math.ceil(q.length*.6)};
+const streak=()=>{let d=today(),s=0;if(!ok(d))d=addD(d,-1);while(d>=S.start&&ok(d)){s++;d=addD(d,-1)}return s};
+const rate=()=>{const n=Math.max(1,diff(S.start,today())+1);let k=0;for(let i=0;i<n;i++)if(ok(addD(S.start,i)))k++;return Math.round(k/n*100)};
+const cnt=(rx,f,t)=>{let n=0;for(let d=f;d<=t;d=addD(d,1))if(Object.keys(S.done[d]||{}).some(k=>rx.test(k)))n++;return n};
+const totalXP=()=>{let t=0;for(const d in S.done)for(const q in S.done[d])t+=S.done[d][q];for(const k in S.claimed)t+=S.claimed[k];return t};
+const lvl=x=>{let L=1,n=400;while(x>=n){x-=n;L++;n=400*L}return{L,cur:x,need:n}};
+const lastW=()=>S.w[S.w.length-1].v,lastM=()=>S.m[S.m.length-1],lost=()=>S.w[0].v-lastW();
+const best=k=>Math.max(0,...S.logs.map(l=>+l[k]||0));
+const R=[{r:'E',c:'Unawakened'},{r:'D',c:'Fighter',lv:4,ls:4,push:10,sk:3,wa:46},{r:'C',c:'Fighter',lv:9,ls:10,push:20,pu:1,sk:5,wa:42},{r:'B',c:'Assassin',lv:16,ls:16,push:30,pu:3,sk:8,wa:39},{r:'A',c:'Assassin',lv:24,ls:20,push:40,pu:8,sk:10,wa:36},{r:'S',c:'Necromancer',lv:35,ls:22,push:50,pu:12,sk:15,wa:34},{r:'NATIONAL LEVEL',c:'Necromancer',lv:50,ls:22,push:60,pu:18,sk:20,wa:33},{r:'SHADOW MONARCH',c:'Shadow Monarch',lv:70,ls:22,push:80,pu:25,sk:30,wa:32}];
+const chk=q=>{const a=[['Level '+q.lv,lvl(totalXP()).L>=q.lv],['Lost '+q.ls+' kg',lost()>=q.ls],['Push-ups x'+q.push,best('push')>=q.push],['Nonstop skip '+q.sk+' min',best('sk')>=q.sk],['Waist <= '+q.wa+' in',lastM().w<=q.wa]];if(q.pu)a.push(['Pull-ups x'+q.pu,best('pu')>=q.pu]);return a};
+const rankI=()=>{let i=0;while(i+1<R.length&&chk(R[i+1]).every(x=>x[1]))i++;return i};
+const stats=()=>{const b=best,c=x=>Math.min(99,Math.round(x)),t=today(),sv=Object.values(S.steps),av=sv.length?sv.reduce((a,b)=>a+b,0)/sv.length:6000;
+return{STR:c(5+b('push')*1.2+b('pu')*6+b('sq')*.3),STA:c(8+b('pl')/4+S.logs.length*.5),AGI:c(12+b('hs')/4),MOB:c(10+cnt(/mobil/,S.start,t)/2),END:c(9+b('sk')*3+av/1000*2),DIS:c(4+streak()*2+rate()/5),REC:c(5+cnt(/bed|sleep/,addD(t,-13),t)*6)}};
+const MQ=()=>{const w=lastW(),b=best,mx=Math.max(0,...Object.values(S.steps)),wa=lastM().w;return[
+['d30','Complete the first 30 days (70%+ days on target)',400,'Awakened',diff(S.start,today())>=30&&rate()>=70],
+['w100','Reach 100 kg',300,'Initiate',w<=100],['w95','Reach 95 kg',400,'Fighter',w<=95],['w90','Reach 90 kg',600,'Assassin',w<=90],['w85','Reach 85 kg',1200,'Hunter',w<=85],
+['p10','10 standard push-ups in one set',300,'',b('push')>=10],['p25','25 standard push-ups (stronger upper body)',600,'Pusher',b('push')>=25],
+['pu1','First pull-up (needs a bar or sturdy support)',400,'',b('pu')>=1],['sk5','Skip 5 minutes nonstop',300,'',b('sk')>=5],['pl90','Plank 90 seconds',250,'',b('pl')>=90],
+['wa44','Waist 44 in or less',500,'',wa<=44],['wa40','Waist 40 in or less',700,'',wa<=40],['st10','10,000 steps in one day',200,'',mx>=1e4]]};
+const ACH=()=>{const x=lvl(totalXP()).L,n=S.logs.length,s=streak();return[['First quest done',Object.keys(S.done).length>0],['7-day streak',s>=7],['30-day streak',s>=30],['5 workouts logged',n>=5],['25 workouts logged',n>=25],['Lost 1 kg',lost()>=1],['Lost 5 kg',lost()>=5],['Lost 10 kg',lost()>=10],['Level 5',x>=5],['Level 10',x>=10]]};
+const rec=()=>{if(S.sick)return false;const d=today();if(diff(S.start,d)<3)return false;for(let i=1;i<=3;i++){const e=addD(d,-i);if(ok(e))return false}return true};
+function toast(m){const t=$('#toast');t.innerHTML=m;t.style.display='block';clearTimeout(toast.h);toast.h=setTimeout(()=>t.style.display='none',3500)}
+function act(f){const a=lvl(totalXP()).L;f();save();const b=lvl(totalXP()).L;if(b>a)toast('[ LEVEL UP ]<br>Congratulations, Player. You have reached Level '+b+'.');render()}
+function tog(id){act(()=>{const d=today();S.done[d]=S.done[d]||{};const q=dqs().find(x=>x.id==id);if(S.done[d][id])delete S.done[d][id];else{S.done[d][id]=q.xp;toast('[ SYSTEM NOTIFICATION ]<br>Quest complete. +'+q.xp+' XP')}})}
+function setSteps(v){act(()=>{const d=today();S.steps[d]=+v||0;const q=dqs().find(x=>/step/i.test(x.n));if(q&&S.steps[d]>=S.stepGoal){S.done[d]=S.done[d]||{};S.done[d][q.id]=q.xp}})}
+function claim(k,x){act(()=>{S.claimed[k]=x;toast('[ REWARD ]<br>+'+x+' XP')})}
+function tab(t){T=t;render();scrollTo(0,0)}
+const bar=(c,n)=>`<div class=bar><i style="width:${Math.min(100,c/n*100)}%"></i></div>`;
+function chart(a,t){if(a.length<2)return`<div class=card><div class=sys>${t}</div><small>Add 2+ entries to see the graph.</small></div>`;const v=a.map(x=>x.v),mn=Math.min(...v),r=Math.max(...v)-mn||1;const p=a.map((x,i)=>`${10+i*280/(a.length-1)},${100-(x.v-mn)/r*80}`).join(' ');return`<div class=card><div class=sys>${t}</div><svg viewBox="0 0 300 115" width=100%><polyline fill=none stroke="#2aa8ff" stroke-width=2 points="${p}"/></svg><small>${a[0].v} to ${a[a.length-1].v}</small></div>`}
+function vStatus(){const x=totalXP(),l=lvl(x),i=rankI(),st=stats(),nx=R[i+1],done=Object.values(S.done).reduce((a,o)=>a+Object.keys(o).length,0);
+return`<div class=card><div class=sys>[ STATUS WINDOW ]</div>
+<div class=row><b>PLAYER</b><span>${esc(S.name)}</span></div><div class=row><b>RANK</b><span>${R[i].r}</span></div><div class=row><b>LEVEL</b><span>${l.L}</span></div><div class=row><b>CLASS</b><span>${R[i].c}</span></div>
+<div class=row><b>WEIGHT</b><span>${lastW()} kg to ${85} kg</span></div><div class=row><b>WAIST</b><span>${lastM().w} in</span></div>
+<div class=row><b>XP</b><span>${x} total (${l.cur}/${l.need})</span></div>${bar(l.cur,l.need)}
+<div class=row><b>STREAK</b><span>${streak()} days</span></div><div class=row><b>QUESTS DONE</b><span>${done}</span></div><div class=row><b>ON-TARGET RATE</b><span>${rate()}%</span></div></div>
+<div class=card><div class=sys>[ STATS ]</div><div class=grid>${Object.entries(st).map(([k,v])=>`<div><div class=row><b>${k}</b><span>${v}</span></div>${bar(v,100)}</div>`).join('')}</div><small>Stats come from logged results (best push-ups, plank, skipping, streak, sleep quests), not from ticking boxes.</small></div>
+${nx?`<div class=card><div class=sys>[ NEXT RANK: ${nx.r} ]</div>${chk(nx).map(c=>`<div class="row ${c[1]?'ok':''}"><span>${c[1]?'[x]':'[ ]'} ${c[0]}</span></div>`).join('')}<small>All conditions are required. Weight alone cannot rank you up.</small></div>`:''}
+<div class=card><div class=sys>[ ACHIEVEMENTS ]</div>${ACH().map(a=>`<div class="row ${a[1]?'ok':''}"><span>${a[1]?'[x]':'[ ]'} ${a[0]}</span></div>`).join('')}</div>`}
+function vToday(){const d=today(),q=dayQ(d),dn=S.done[d]||{},tr=S.days.includes(dow(d)),ses=tr?SES[S.days.slice().sort().indexOf(dow(d))%4]:null;
+let h=`<div class=card><div class=sys>[ DAILY QUESTS ]</div><b>${d}</b>: ${tr?'Training day, '+ses.n:'Rest day. Walk, mobility, eat well.'}${S.sick?'<p class=warn>Recovery mode ON: penalties paused.</p>':''}`;
+if(rec()){const k='rec'+d,rs=['bed|sleep','mobil','step'].every(r=>Object.keys(dn).some(i=>new RegExp(r,'i').test(i)));h+=`<hr><div class=warn><b>[ RECOVERY QUEST ]</b></div><small>3 days off target. No catch-up pile. Today only: sleep, mobility and steps quests. Complete those 3 for +100 XP.</small><button class=btn ${rs&&!S.claimed[k]?'':'disabled'} onclick="claim('${k}',100)">${S.claimed[k]?'Claimed':'Claim +100 XP'}</button>`}
+h+=q.map(x=>`<label class="q ${dn[x.id]?'on':''}"><input type=checkbox ${dn[x.id]?'checked':''} onchange="tog('${x.id}')"><span>${esc(x.n)}<small>Difficulty ${x.d} | +${x.xp} XP</small></span></label>`).join('');
+h+=`<div class=q><span style="flex:1">Steps today (goal ${S.stepGoal})<input type=number id=st value="${S.steps[d]||''}" onchange="setSteps(this.value)"></span></div></div>`;
+if(ses&&ses.ex.length)h+=`<div class=card><div class=sys>[ TODAY'S SESSION ]</div><small>${ses.n}. Warm up 3 min (arm circles, cat-cow, hip hinges).</small>${ses.ex.map(e=>`<details><summary>${e[0]} - ${e[1]} - rest ${e[2]}</summary><small>${e[3]}</small></details>`).join('')}<small>Log it in the LOG tab when done.</small></div>`;return h}
+function vWeek(){const s=wk(today()),e=addD(s,6),lg=S.logs.filter(l=>l.d>=s&&l.d<=e),pr=S.logs.filter(l=>l.d<s),sv=[...Array(7)].map((_,i)=>S.steps[addD(s,i)]).filter(Boolean),av=sv.length?Math.round(sv.reduce((a,b)=>a+b,0)/sv.length):0;
+const imp=lg.some(l=>['push','sq','pl','pu','sk'].some(k=>+l[k]>Math.max(0,...pr.map(p=>+p[k]||0))));
+const Q=[['ses','Complete 4 strength/conditioning sessions',150,lg.length,4],['stp','Average steps at or above goal (log daily)',100,av>=S.stepGoal?1:0,1],['slp','Sleep quest done 5 of 7 days',100,cnt(/bed|sleep/,s,e),5],['wgt','Weigh in once',40,S.w.some(x=>x.d>=s&&x.d<=e)?1:0,1],['imp','Beat a previous best in any logged exercise',80,imp?1:0,1]];
+return`<div class=card><div class=sys>[ WEEKLY QUESTS ]</div><small>Week of ${s}</small>${Q.map(q=>{const k='w'+s+q[0],d=q[3]>=q[4];return`<div class=q><span style="flex:1">${q[1]}<small>${Math.min(q[3],q[4])}/${q[4]} | +${q[2]} XP</small>${bar(q[3],q[4])}</span><button class=btn ${d&&!S.claimed[k]?'':'disabled'} onclick="claim('${k}',${q[2]})">${S.claimed[k]?'Done':'Claim'}</button></div>`}).join('')}</div><div class=card><div class=sys>[ THIS WEEK ]</div>${[...Array(7)].map((_,i)=>{const d=addD(s,i);return`<div class=row><span>${d}${d==today()?' (today)':''}</span><span class="${ok(d)?'ok':''}">${ok(d)?'on target':d>today()?'-':'below target'}</span></div>`}).join('')}</div>`}
+function vMain(){return`<div class=card><div class=sys>[ MAIN QUESTS ]</div>${MQ().map(q=>{const k='m_'+q[0];return`<div class=q><span style="flex:1">${q[1]}<small>+${q[2]} XP${q[3]?' | Title: '+q[3]:''}</small></span><button class=btn ${q[4]&&!S.claimed[k]?'':'disabled'} onclick="claim('${k}',${q[2]})">${S.claimed[k]?'Cleared':q[4]?'Claim':'Locked'}</button></div>`}).join('')}</div>`}
+function addW(){const v=+$('#wv').value,d=$('#wd').value||today();if(!v)return;act(()=>{S.w=S.w.filter(x=>x.d!=d).concat({d,v}).sort((a,b)=>a.d<b.d?-1:1)})}
+function addM(){const g=i=>+$(i).value,d=$('#md').value||today();if(!g('#mw'))return;act(()=>{S.m=S.m.filter(x=>x.d!=d).concat({d,c:g('#mc'),w:g('#mw'),h:g('#mh')}).sort((a,b)=>a.d<b.d?-1:1)})}
+function addL(){const g=i=>$(i).value,d=g('#ld')||today();act(()=>{S.logs.push({d,t:g('#lt'),push:+g('#lp')||0,sq:+g('#lq')||0,pl:+g('#ll')||0,pu:+g('#lu')||0,sk:+g('#ls')||0,hs:+g('#lh')||0,n:g('#ln')});const q=dqs().find(x=>x.t);if(q){S.done[d]=S.done[d]||{};S.done[d][q.id]=q.xp}toast('[ WORKOUT LOGGED ]')})}
+function vLog(){const f=(i,l)=>`<label>${l}<input type=number id=${i} step=any></label>`;return`<div class=card><div class=sys>[ WEIGHT ]</div><div class=f2><input type=date id=wd value="${today()}"><input type=number step=0.1 id=wv placeholder="kg"></div><button class=btn onclick=addW()>Save weight</button><small>Weigh in the morning after the toilet, before food. Judge the 2-week trend, not one day.</small></div>
+<div class=card><div class=sys>[ MEASUREMENTS (inches) ]</div><input type=date id=md value="${today()}"><div class=f2>${f('mc','Chest')}${f('mw','Waist')}${f('mh','Hip')}</div><button class=btn onclick=addM()>Save measurements</button></div>
+<div class=card><div class=sys>[ WORKOUT LOG ]</div><input type=date id=ld value="${today()}"><select id=lt><option>A: Push + Legs</option><option>B: Pull + Posture</option><option>C: Conditioning</option><option>Other</option></select><div class=f2>${f('lp','Best standard push-ups (1 set)')}${f('lq','Bodyweight squats (1 set)')}${f('ll','Plank (sec)')}${f('lu','Pull-ups')}${f('ls','Skip nonstop (min)')}${f('lh','Handstand (sec)')}</div><input type=text id=ln placeholder="Notes (knee, energy, sleep)"><button class=btn onclick=addL()>Save workout</button><small>Only enter results you actually tested. These drive your stats and ranks.</small></div>
+${chart(S.w.map(x=>({v:x.v})),'[ WEIGHT GRAPH ]')}${chart(S.m.map(x=>({v:x.w})),'[ WAIST GRAPH ]')}
+<div class=card><div class=sys>[ RECENT WORKOUTS ]</div>${S.logs.slice(-6).reverse().map(l=>`<div class=s>${l.d} ${esc(l.t)}: push ${l.push}, sq ${l.sq}, plank ${l.pl}s, skip ${l.sk}m ${esc(l.n||'')}</div>`).join('')||'<small>None yet.</small>'}</div>`}
+function vPlan(){return`<div class=card><div class=sys>[ 30-DAY RULES ]</div><small>Weeks 1-2: learn form, stop 2 reps before failure. Weeks 3-4: add a set or reps. Progress only when you hit the top reps of every set cleanly in 2 sessions in a row.</small>
+<p><b>Push ladder:</b> incline (high) &gt; incline (low) &gt; knee &gt; standard &gt; feet-elevated.<br><b>Squat ladder:</b> box (high) &gt; box (low) &gt; bodyweight &gt; goblet DB &gt; slow tempo.<br><b>Pull:</b> DB rows now; add a doorway bar for hangs and pull-ups later (optional).</p>
+<small>Knee rule: stop any exercise that causes sharp pain. Constant pain, swelling or locking means see a doctor/physio.</small></div>
+<div class=card><div class=sys>[ NUTRITION ]</div><small>Target ~2,100-2,200 kcal and ~90-100 g protein. Half the plate vegetables, one palm of protein per meal (dal, soy chunks, egg, curd, chicken), one fist of roti/rice. Add 30 g dry soy chunks to a sabzi or pulao on non-chicken days. Weight stuck 3 weeks? Check portions and steps first, then cut ~100-150 kcal.</small></div>
+${SES.filter((s,i)=>i!=2).map(s=>`<div class=card><div class=sys>${s.n}</div>${s.ex.map(e=>`<div class=s>${e[0]} - ${e[1]}, rest ${e[2]}</div>`).join('')}</div>`).join('')}`}
+function setK(k,v){S[k]=v;save()}
+function remind(){if(!('Notification' in window))return toast('Notifications not supported here.');Notification.requestPermission().then(p=>toast(p=='granted'?'Reminders enabled.':'Permission denied.'))}
+function exp(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(S)],{type:'application/json'}));a.download='system-backup-'+today()+'.json';a.click()}
+function imp(e){const f=e.target.files[0];if(f)f.text().then(t=>{try{S=Object.assign(DEF(),JSON.parse(t));save();render();toast('Backup restored.')}catch(x){toast('Invalid backup file.')}})}
+function reset(){if(confirm('Erase ALL progress? Export a backup first.')){S=DEF();save();render()}}
+function vSet(){const dn=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];return`<div class=card><div class=sys>[ SETTINGS ]</div>Name<input type=text value="${esc(S.name)}" onchange="setK('name',this.value)">Start date<input type=date value="${S.start}" onchange="setK('start',this.value)">Daily step goal<input type=number value="${S.stepGoal}" onchange="setK('stepGoal',+this.value)">
+Training days<div>${dn.map((n,i)=>`<label><input type=checkbox ${S.days.includes(i)?'checked':''} onchange="S.days=[...Array(7).keys()].filter(j=>document.querySelectorAll('.dy')[j].checked);save()" class=dy> ${n} </label>`).join('')}</div>
+<label class=q style="border:0"><input type=checkbox ${S.sick?'checked':''} onchange="setK('sick',this.checked);render()"><span>Sick/injured mode<small>Pauses penalties and recovery quests. Rest is not failure.</small></span></label>
+Reminder time<input type=time value="${S.rem}" onchange="setK('rem',this.value)"><button class=btn onclick=remind()>Enable reminders</button><small>Reminders only fire while the app is open or recently active. Android web apps cannot guarantee background alarms: also set a phone alarm.</small></div>
+<div class=card><div class=sys>[ EDIT DAILY QUESTS ]</div><small>One per line: name|XP|difficulty|T (add T for training days only)</small><textarea onchange="setK('dqt',this.value)">${esc(S.dqt)}</textarea><button class=btn onclick="S.dqt=DQ;save();render()">Reset quests to default</button></div>
+<div class=card><div class=sys>[ BACKUP ]</div><button class=btn onclick=exp()>Export backup</button><input type=file accept=".json" onchange=imp(event)><small>Data lives only in this browser on this phone. Export a backup every week.</small><button class=btn onclick=reset() style="border-color:#ff6b86">Reset all progress</button></div>`}
+const V={status:vStatus,today:vToday,week:vWeek,main:vMain,log:vLog,plan:vPlan,set:vSet},TN={status:'STATUS',today:'TODAY',week:'WEEK',main:'MAIN',log:'LOG',plan:'PLAN',set:'SET'};
+function render(){const a=document.activeElement,id=a&&a.id;$('#app').innerHTML=V[T]();$('#nav').innerHTML=Object.keys(V).map(k=>`<button class="${k==T?'a':''}" onclick="tab('${k}')">${TN[k]}</button>`).join('')}
+setInterval(()=>{if(!S.rem||!('Notification' in window)||Notification.permission!='granted')return;const n=new Date(),t=String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');if(t==S.rem&&S.last!=today()){S.last=today();save();navigator.serviceWorker.ready.then(r=>r.showNotification('[ SYSTEM ] Daily Quests pending',{body:'Open the app and complete today\'s quests.',icon:'icon.svg'}))}},30000);
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+render();
+</script></body></html>
